@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Graphique des températures</h1>
+
+    <!-- Injection des données JSON envoyées par Django -->
+    {{ readings|json_script:"readings-data" }}
+
+    <div class="mt-4">
+        <canvas id="graphCanvas" width="900" height="450"></canvas>
+    </div>
+
+    <a href="{% url 'tempmon:dashboard' %}" class="btn btn-secondary mt-3">Retour au dashboard</a>
+</div>
+
+<!-- Librairies nécessaires -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
+
+<script>
+// Charger les données envoyées par Django
+const readings = JSON.parse(document.getElementById('readings-data').textContent);
+
+// Debug : afficher dans la console pour vérifier les données
+console.log("Données reçues :", readings);
+
+// Préparer les labels et valeurs
+const labels = readings.map(r => r.timestamp);
+const temperatures = readings.map(r => r.temperature_c);
+const pointColors = readings.map(r => r.is_anomaly ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 192, 1)');
+
+// Calcul de la moyenne
+const avgTemp = readings.length
+    ? readings.reduce((sum, r) => sum + r.temperature_c, 0) / readings.length
+    : 0;
+const avgLine = readings.map(() => avgTemp);
+
+// Dessiner le graphique
+const ctx = document.getElementById('graphCanvas').getContext('2d');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Température (°C)',
+                data: temperatures,
+                borderColor: 'rgba(54, 162, 235, 0.8)',
+                fill: false,
+                tension: 0.2,
+                pointBackgroundColor: pointColors,
+                pointRadius: 5
+            },
+            {
+                label: 'Température moyenne',
+                data: avgLine,
+                borderColor: 'rgba(255, 206, 86, 0.8)',
+                borderWidth: 2,
+                fill: false,
+                pointRadius: 0,
+                borderDash: [5,5]
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: true, position: 'top' },
+            tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+            x: {
+                type: 'time',
+                time: {
+                    parser: 'YYYY-MM-DD HH:mm:ss',
+                    tooltipFormat: 'll HH:mm',
+                    unit: 'hour',
+                    displayFormats: { hour: 'HH:mm' }
+                },
+                title: { display: true, text: 'Date/Heure' }
+            },
+            y: {
+                title: { display: true, text: 'Température (°C)' },
+                suggestedMin: 0,
+                suggestedMax: 100
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Dashboard - Température des moteurs</h1>
+
+    <div class="mb-4">
+        <form method="post" action="{% url 'tempmon:add_reading' %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Ajouter Relevé</button>
+        </form>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Capteur</th>
+                <th>Température (°C)</th>
+                <th>Status</th>
+                <th>Date/Heure</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reading in readings %}
+            <tr>
+                <td>{{ reading.id }}</td>
+                <td>{{ reading.sensor_id }}</td>
+                <td>{{ reading.temperature_c }}</td>
+                <td>
+                    {% if reading.is_anomaly %}
+                        <span class="badge bg-danger">Anomalie</span>
+                    {% else %}
+                        <span class="badge bg-success">Normal</span>
+                    {% endif %}
+                </td>
+                <td>{{ reading.timestamp }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">Aucun relevé disponible.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'tempmon:graph_page' %}" class="btn btn-info mt-3">Voir le graphique complet</a>
+</div>
+{% endblock %}
